@@ -4,7 +4,7 @@ A fun, cartoonish color memory game built for mobile and YouTube Playables. Help
 
 ## Play Now
 
-[Play on GitHub Pages](https://yourusername.github.io/picky-paintbrush/)
+[Play on GitHub Pages](https://sarthaksri06.github.io/picky-paintbrush/)
 
 ## How to Play
 
@@ -22,17 +22,17 @@ A fun, cartoonish color memory game built for mobile and YouTube Playables. Help
 
 ## Features
 
-- Kid-friendly cartoon mascot (Picky the Paintbrush)
-- Custom SVG illustrations (no emojis)
+- Kid-friendly 
+- Custom SVG illustrations
 - Mobile-optimized touch controls
-- Web Audio API sound effects (no external files)
+- Web Audio API sound effects
 - Local leaderboard with best scores
 - Confetti celebrations for high scores
 - Landscape mode support
 
 ## Tech Stack
 
-- Single HTML file (no build step)
+- HTML file
 - Pure CSS animations
 - Vanilla JavaScript
 - Web Audio API for synthesized sounds
