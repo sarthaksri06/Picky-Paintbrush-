@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#FF6B6B">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Picky the Paintbrush</title>
+    <style>
+        :root {
+            --primary: #FF6B6B;
+            --secondary: #4ECDC4;
+            --accent: #FFE66D;
+            --dark: #2D3436;
+            --light: #F7F9FC;
+            --success: #00B894;
+            --warning: #FDCB6E;
+            --danger: #E17055;
+            --shadow: 0 8px 0 rgba(0,0,0,0.15);
+            --shadow-sm: 0 4px 0 rgba(0,0,0,0.15);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; touch-action: manipulation; -webkit-touch-callout: none; user-select: none; }
+        html, body { height: 100%; overflow: hidden; font-family: 'Nunito', 'Arial Rounded MT Bold', 'Comic Sans MS', sans-serif; background: linear-gradient(160deg, #FFE66D 0%, #FF9F43 30%, #FF6B6B 70%, #4ECDC4 100%); background-attachment: fixed; }
+        .bg-shapes { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+        .shape { position: absolute; opacity: 0.12; animation: drift 20s ease-in-out infinite; }
+        .shape:nth-child(1) { width: 120px; height: 120px; background: var(--primary); border-radius: 50%; top: 10%; left: -5%; animation-delay: 0s; }
+        .shape:nth-child(2) { width: 80px; height: 80px; background: var(--secondary); border-radius: 20%; top: 60%; right: -3%; animation-delay: -5s; animation-duration: 15s; }
+        .shape:nth-child(3) { width: 150px; height: 150px; background: var(--accent); border-radius: 30%; bottom: 5%; left: 10%; animation-delay: -10s; animation-duration: 25s; }
+        .shape:nth-child(4) { width: 60px; height: 60px; background: var(--primary); border-radius: 10%; top: 30%; right: 15%; animation-delay: -3s; animation-duration: 18s; }
+        .shape:nth-child(5) { width: 100px; height: 100px; background: var(--secondary); border-radius: 50%; bottom: 30%; left: 60%; animation-delay: -7s; animation-duration: 22s; }
+        @keyframes drift { 0%,100% { transform: translate(0,0) rotate(0deg); } 25% { transform: translate(30px,-20px) rotate(90deg); } 50% { transform: translate(-20px,30px) rotate(180deg); } 75% { transform: translate(20px,20px) rotate(270deg); } }
+        #app { position: relative; z-index: 1; height: 100vh; height: 100dvh; max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; padding: env(safe-area-inset-top) 12px env(safe-area-inset-bottom); }
+        .screen { display: none; flex-direction: column; height: 100%; animation: fadeIn 0.3s ease; }
+        .screen.active { display: flex; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .app-header { text-align: center; padding: 8px 0 4px; flex-shrink: 0; }
+        .app-title { font-size: clamp(22px, 6vw, 32px); font-weight: 900; color: white; text-shadow: 3px 3px 0 rgba(0,0,0,0.2), 0 0 20px rgba(255,255,255,0.3); letter-spacing: 1px; line-height: 1.1; }
+        .app-subtitle { font-size: clamp(11px, 3vw, 14px); color: rgba(255,255,255,0.9); font-weight: 700; margin-top: 2px; text-shadow: 1px 1px 0 rgba(0,0,0,0.2); }
+        .score-bar { display: flex; justify-content: space-between; align-items: center; background: white; border-radius: 14px; padding: 8px 14px; margin: 6px 0; box-shadow: var(--shadow-sm); flex-shrink: 0; }
+        .score-pill { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; }
+        .score-pill.round { color: var(--primary); }
+        .score-pill.total { color: var(--secondary); }
+        .score-pill.best { color: var(--warning); }
+        .game-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; min-height: 0; overflow-y: auto; padding: 4px 0; }
+        .card { background: white; border-radius: 20px; padding: 16px; box-shadow: var(--shadow); width: 100%; max-width: 360px; }
+        .card-title { font-size: 18px; font-weight: 900; text-align: center; margin-bottom: 12px; color: var(--dark); }
+        .mascot-wrap { width: 100px; height: 100px; flex-shrink: 0; }
+        .mascot-wrap svg { width: 100%; height: 100%; filter: drop-shadow(0 4px 0 rgba(0,0,0,0.15)); transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+        .mascot-wrap.happy svg { animation: mascotBounce 0.6s ease; }
+        .mascot-wrap.sad svg { animation: mascotShake 0.5s ease; }
+        .mascot-wrap.think svg { animation: mascotThink 1s ease infinite; }
+        @keyframes mascotBounce { 0% { transform: scale(1) translateY(0); } 30% { transform: scale(1.2) translateY(-15px); } 60% { transform: scale(1.1) translateY(-5px); } 100% { transform: scale(1) translateY(0); } }
+        @keyframes mascotShake { 0%,100% { transform: translateX(0) rotate(0); } 20% { transform: translateX(-8px) rotate(-5deg); } 40% { transform: translateX(8px) rotate(5deg); } 60% { transform: translateX(-5px) rotate(-3deg); } 80% { transform: translateX(5px) rotate(3deg); } }
+        @keyframes mascotThink { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+        .color-stage { width: 100%; max-width: 280px; aspect-ratio: 1; position: relative; flex-shrink: 0; }
+        .color-display { width: 100%; height: 100%; border-radius: 24px; box-shadow: var(--shadow), inset 0 0 40px rgba(0,0,0,0.1); position: relative; overflow: hidden; transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); border: 4px solid white; }
+        .color-display::before { content: ''; position: absolute; top: 8%; left: 12%; width: 35%; height: 25%; background: rgba(255,255,255,0.25); border-radius: 50%; transform: rotate(-20deg); filter: blur(2px); }
+        .color-display.hidden { background: linear-gradient(135deg, #e0e0e0 0%, #f0f0f0 50%, #e0e0e0 100%) !important; border: 4px dashed #ccc; }
+        .color-display.hidden::after { content: ''; position: absolute; inset: 0; background: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(0,0,0,0.03) 10px, rgba(0,0,0,0.03) 20px); }
+        .hidden-icon { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 48px; opacity: 0.2; font-weight: 900; color: #999; pointer-events: none; }
+        .timer-track { width: 100%; max-width: 280px; height: 12px; background: rgba(255,255,255,0.4); border-radius: 10px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.1); flex-shrink: 0; }
+        .timer-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--success), var(--warning), var(--danger)); transition: width 0.1s linear; width: 100%; position: relative; }
+        .timer-fill::after { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 20px; background: rgba(255,255,255,0.4); border-radius: 0 10px 10px 0; filter: blur(4px); }
+        .picker-panel { width: 100%; max-width: 360px; background: white; border-radius: 20px; padding: 14px; box-shadow: var(--shadow); display: none; flex-shrink: 0; }
+        .picker-panel.active { display: block; animation: slideUp 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+        @keyframes slideUp { from { transform: translateY(30px) scale(0.95); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
+        .picker-preview { width: 100%; height: 60px; border-radius: 14px; margin-bottom: 12px; box-shadow: var(--shadow-sm); border: 3px solid white; transition: background 0.1s; }
+        .slider-row { margin-bottom: 10px; }
+        .slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+        .slider-label { font-size: 13px; font-weight: 800; color: var(--dark); display: flex; align-items: center; gap: 6px; }
+        .slider-label .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+        .slider-value { font-size: 13px; font-weight: 900; color: var(--dark); background: var(--light); padding: 2px 10px; border-radius: 10px; min-width: 44px; text-align: center; }
+        .slider-track { -webkit-appearance: none; appearance: none; width: 100%; height: 28px; border-radius: 14px; outline: none; border: 2px solid var(--dark); box-shadow: var(--shadow-sm); cursor: pointer; transition: transform 0.1s; }
+        .slider-track:active { transform: scale(0.98); }
+        .slider-track::-webkit-slider-thumb { -webkit-appearance: none; width: 36px; height: 36px; border-radius: 50%; background: white; border: 3px solid var(--dark); box-shadow: 0 3px 0 rgba(0,0,0,0.2); cursor: pointer; margin-top: -5px; transition: transform 0.1s; }
+        .slider-track::-webkit-slider-thumb:active { transform: scale(1.15); }
+        .slider-track::-moz-range-thumb { width: 36px; height: 36px; border-radius: 50%; background: white; border: 3px solid var(--dark); box-shadow: 0 3px 0 rgba(0,0,0,0.2); cursor: pointer; }
+        .btn { width: 100%; max-width: 360px; padding: 16px; font-size: 18px; font-weight: 900; font-family: inherit; border: none; border-radius: 16px; cursor: pointer; box-shadow: var(--shadow); transition: all 0.1s; text-transform: uppercase; letter-spacing: 0.5px; color: white; text-shadow: 0 2px 0 rgba(0,0,0,0.15); flex-shrink: 0; position: relative; overflow: hidden; }
+        .btn::after { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: rgba(255,255,255,0.2); transition: left 0.3s; }
+        .btn:active { transform: translateY(4px); box-shadow: 0 2px 0 rgba(0,0,0,0.15); }
+        .btn:active::after { left: 0; }
+        .btn-primary { background: var(--primary); }
+        .btn-secondary { background: var(--secondary); }
+        .btn-accent { background: var(--accent); color: var(--dark); text-shadow: 0 1px 0 rgba(255,255,255,0.5); }
+        .btn-dark { background: var(--dark); }
+        .btn-row { display: flex; gap: 10px; width: 100%; max-width: 360px; }
+        .btn-row .btn { max-width: none; }
+        .menu-hero { text-align: center; margin-bottom: 10px; }
+        .menu-mascot { width: 140px; height: 140px; margin: 0 auto 10px; animation: heroFloat 3s ease-in-out infinite; }
+        .menu-mascot svg { width: 100%; height: 100%; filter: drop-shadow(0 6px 0 rgba(0,0,0,0.15)); }
+        @keyframes heroFloat { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-12px) rotate(2deg); } }
+        .menu-title { font-size: clamp(28px, 8vw, 40px); font-weight: 900; color: white; text-shadow: 3px 3px 0 rgba(0,0,0,0.2), 0 0 30px rgba(255,255,255,0.2); line-height: 1.1; margin-bottom: 6px; }
+        .menu-desc { font-size: 14px; color: rgba(255,255,255,0.9); font-weight: 700; text-shadow: 1px 1px 0 rgba(0,0,0,0.2); max-width: 300px; margin: 0 auto 16px; line-height: 1.4; }
+        .diff-selector { display: flex; gap: 8px; width: 100%; max-width: 360px; margin-bottom: 12px; }
+        .diff-btn { flex: 1; padding: 12px 8px; font-size: 14px; font-weight: 900; font-family: inherit; border: 3px solid white; border-radius: 14px; cursor: pointer; background: rgba(255,255,255,0.25); color: white; text-shadow: 0 1px 0 rgba(0,0,0,0.2); transition: all 0.2s; box-shadow: var(--shadow-sm); }
+        .diff-btn.active { background: white; color: var(--dark); text-shadow: none; transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.15); }
+        .diff-btn:active { transform: translateY(2px); }
+        .lb-card { width: 100%; max-width: 360px; background: white; border-radius: 16px; padding: 12px 16px; box-shadow: var(--shadow-sm); margin-top: 8px; }
+        .lb-title { font-size: 14px; font-weight: 900; text-align: center; margin-bottom: 8px; color: var(--dark); display: flex; align-items: center; justify-content: center; gap: 6px; }
+        .lb-entry { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #eee; font-size: 13px; font-weight: 800; }
+        .lb-entry:last-child { border-bottom: none; }
+        .lb-rank { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 900; flex-shrink: 0; }
+        .lb-rank.gold { background: #FFD700; color: #8B7500; }
+        .lb-rank.silver { background: #C0C0C0; color: #555; }
+        .lb-rank.bronze { background: #CD7F32; color: white; }
+        .lb-rank.normal { background: var(--light); color: var(--dark); }
+        .lb-score { color: var(--primary); }
+        .lb-date { color: #999; font-size: 11px; }
+        .result-hero { text-align: center; margin-bottom: 8px; }
+        .result-mascot { width: 100px; height: 100px; margin: 0 auto; }
+        .result-mascot svg { width: 100%; height: 100%; filter: drop-shadow(0 4px 0 rgba(0,0,0,0.15)); }
+        .result-score-big { font-size: clamp(56px, 15vw, 80px); font-weight: 900; color: var(--primary); text-shadow: 3px 3px 0 rgba(0,0,0,0.15); line-height: 1; margin: 4px 0; }
+        .result-label { font-size: 16px; font-weight: 900; color: var(--dark); margin-bottom: 4px; }
+        .result-msg { font-size: 14px; font-weight: 700; color: #666; margin-bottom: 12px; }
+        .compare-row { display: flex; gap: 12px; justify-content: center; margin-bottom: 12px; }
+        .compare-box { text-align: center; }
+        .compare-swatch { width: 70px; height: 70px; border-radius: 16px; box-shadow: var(--shadow-sm); border: 3px solid white; margin-bottom: 4px; }
+        .compare-label { font-size: 11px; font-weight: 900; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+        .accuracy-wrap { margin-bottom: 12px; }
+        .accuracy-label { display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; color: #888; margin-bottom: 4px; }
+        .accuracy-track { height: 20px; background: var(--light); border-radius: 10px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.08); }
+        .accuracy-fill { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--danger), var(--warning), var(--success)); transition: width 1s cubic-bezier(0.68, -0.55, 0.265, 1.55); width: 0%; position: relative; }
+        .accuracy-fill::after { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 30px; background: rgba(255,255,255,0.3); filter: blur(4px); }
+        .go-trophy { width: 120px; height: 120px; margin: 0 auto 8px; }
+        .go-trophy svg { width: 100%; height: 100%; filter: drop-shadow(0 6px 0 rgba(0,0,0,0.15)); }
+        .go-title { font-size: 28px; font-weight: 900; color: white; text-shadow: 2px 2px 0 rgba(0,0,0,0.2); margin-bottom: 4px; }
+        .go-final { font-size: clamp(48px, 12vw, 72px); font-weight: 900; color: var(--accent); text-shadow: 3px 3px 0 rgba(0,0,0,0.2); line-height: 1; margin: 8px 0; }
+        .go-msg { font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.9); text-shadow: 1px 1px 0 rgba(0,0,0,0.2); margin-bottom: 12px; padding: 0 20px; text-align: center; }
+        .stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 12px; }
+        .stat-bubble { background: white; border-radius: 12px; padding: 8px 4px; text-align: center; box-shadow: var(--shadow-sm); }
+        .stat-bubble .num { font-size: 18px; font-weight: 900; color: var(--primary); display: block; }
+        .stat-bubble .lbl { font-size: 10px; font-weight: 800; color: #888; text-transform: uppercase; }
+        .htp-list { list-style: none; padding: 0; }
+        .htp-list li { display: flex; align-items: flex-start; gap: 10px; padding: 8px 0; border-bottom: 1px dashed #eee; font-size: 14px; font-weight: 700; color: var(--dark); line-height: 1.4; }
+        .htp-list li:last-child { border-bottom: none; }
+        .htp-num { width: 28px; height: 28px; border-radius: 50%; background: var(--primary); color: white; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; flex-shrink: 0; box-shadow: 0 2px 0 rgba(0,0,0,0.15); }
+        .htp-diff { margin-top: 12px; padding-top: 12px; border-top: 2px solid var(--light); }
+        .htp-diff-title { font-size: 14px; font-weight: 900; margin-bottom: 8px; color: var(--dark); }
+        .htp-diff-row { display: flex; gap: 8px; font-size: 12px; font-weight: 700; }
+        .htp-diff-tag { padding: 4px 10px; border-radius: 10px; font-weight: 800; }
+        .htp-diff-tag.easy { background: #D4EDDA; color: #155724; }
+        .htp-diff-tag.med { background: #FFF3CD; color: #856404; }
+        .htp-diff-tag.hard { background: #F8D7DA; color: #721C24; }
+        .confetti-layer { position: fixed; inset: 0; pointer-events: none; z-index: 1000; overflow: hidden; }
+        .confetti-piece { position: absolute; width: 10px; height: 10px; animation: confettiDrop 3s ease-out forwards; border-radius: 2px; }
+        @keyframes confettiDrop { 0% { transform: translateY(-20px) rotate(0deg) scale(1); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg) scale(0.5); opacity: 0; } }
+        .toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); background: white; border-radius: 20px; padding: 20px 32px; font-size: 18px; font-weight: 900; color: var(--dark); box-shadow: var(--shadow); z-index: 2000; transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); text-align: center; max-width: 280px; width: 90%; }
+        .toast.show { transform: translate(-50%, -50%) scale(1); }
+        ::-webkit-scrollbar { display: none; }
+        @media (orientation: landscape) and (max-height: 450px) { .game-area { justify-content: flex-start; padding-top: 10px; } .mascot-wrap { width: 60px; height: 60px; } .color-stage { max-width: 180px; } .picker-panel { max-width: 320px; padding: 10px; } .btn { padding: 12px; font-size: 16px; } }
+    </style>
+</head>
+<body>
+    <div class="bg-shapes">
+        <div class="shape"></div><div class="shape"></div><div class="shape"></div><div class="shape"></div><div class="shape"></div>
+    </div>
+    <div id="app">
+        <div class="app-header" id="app-header" style="display:none;">
+            <div class="app-title">PICKY THE PAINTBRUSH</div>
+            <div class="app-subtitle">Can you remember the color?</div>
+        </div>
+        <div class="score-bar" id="score-bar" style="display:none;">
+            <div class="score-pill round">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/><text x="12" y="16" text-anchor="middle" font-size="12" fill="currentColor" font-weight="bold">R</text></svg>
+                <span id="round-display">1/5</span>
+            </div>
+            <div class="score-pill total">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                <span id="score-display">0</span>
+            </div>
+            <div class="score-pill best">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                <span id="best-display">0</span>
+            </div>
+        </div>
+        
+        <div class="screen active" id="screen-menu">
+            <div class="game-area">
+                <div class="menu-hero">
+                    <div class="menu-mascot">
+                        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="40" y="10" width="20" height="60" rx="10" fill="#8B4513" stroke="#2D3436" stroke-width="3"/>
+                            <rect x="35" y="5" width="30" height="20" rx="8" fill="#FF6B6B" stroke="#2D3436" stroke-width="3"/>
+                            <circle cx="42" cy="15" r="4" fill="white" stroke="#2D3436" stroke-width="1.5"/>
+                            <circle cx="58" cy="15" r="4" fill="white" stroke="#2D3436" stroke-width="1.5"/>
+                            <circle cx="42" cy="15" r="2" fill="#2D3436"/>
+                            <circle cx="58" cy="15" r="2" fill="#2D3436"/>
+                            <path d="M45 22 Q50 28 55 22" fill="none" stroke="#2D3436" stroke-width="2" stroke-linecap="round"/>
+                            <rect x="38" y="70" width="24" height="8" rx="2" fill="#636E72" stroke="#2D3436" stroke-width="2"/>
+                            <rect x="35" y="78" width="30" height="6" rx="2" fill="#FFD700" stroke="#2D3436" stroke-width="2"/>
+                            <ellipse cx="45" cy="12" rx="2" ry="3" fill="white" opacity="0.5" transform="rotate(-15 45 12)"/>
+                        </svg>
+                    </div>
+                    <div class="menu-title">PICKY THE<br>PAINTBRUSH</div>
+                    <div class="menu-desc">Picky's colors got mixed up! Help him remember the right colors!</div>
+                </div>
+                <div class="diff-selector">
+                    <button class="diff-btn active" data-diff="easy" onclick="setDiff('easy')">EASY</button>
+                    <button class="diff-btn" data-diff="medium" onclick="setDiff('medium')">MED</button>
+                    <button class="diff-btn" data-diff="hard" onclick="setDiff('hard')">HARD</button>
+                </div>
+                <button class="btn btn-primary" onclick="startGame()">START GAME</button>
+                <button class="btn btn-secondary" onclick="showScreen('howto')">HOW TO PLAY</button>
+                <div class="lb-card">
+                    <div class="lb-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                        HIGH SCORES
+                    </div>
+                    <div id="lb-list"><div class="lb-entry"><span style="color:#999">No scores yet!</span><span>-</span></div></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="screen" id="screen-game">
+            <div class="game-area">
+                <div class="mascot-wrap" id="game-mascot">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="40" y="10" width="20" height="60" rx="10" fill="#8B4513" stroke="#2D3436" stroke-width="3"/>
+                        <rect x="35" y="5" width="30" height="20" rx="8" fill="#FF6B6B" stroke="#2D3436" stroke-width="3"/>
+                        <circle cx="42" cy="15" r="4" fill="white" stroke="#2D3436" stroke-width="1.5"/>
+                        <circle cx="58" cy="15" r="4" fill="white" stroke="#2D3436" stroke-width="1.5"/>
+                        <circle cx="42" cy="15" r="2" fill="#2D3436"/>
+                        <circle cx="58" cy="15" r="2" fill="#2D3436"/>
+                        <path d="M45 22 Q50 28 55 22" fill="none" stroke="#2D3436" stroke-width="2" stroke-linecap="round"/>
+                        <rect x="38" y="70" width="24" height="8" rx="2" fill="#636E72" stroke="#2D3436" stroke-width="2"/>
+                        <rect x="35" y="78" width="30" height="6" rx="2" fill="#FFD700" stroke="#2D3436" stroke-width="2"/>
+                        <ellipse cx="45" cy="12" rx="2" ry="3" fill="white" opacity="0.5" transform="rotate(-15 45 12)"/>
+                    </svg>
+                </div>
+                <div class="timer-track"><div class="timer-fill" id="timer-fill"></div></div>
+                <div class="color-stage">
+                    <div class="color-display" id="color-display"></div>
+                    <div class="hidden-icon" id="hidden-icon" style="display:none;">?</div>
+                </div>
+                <div class="picker-panel" id="picker-panel">
+                    <div class="picker-preview" id="picker-preview"></div>
+                    <div class="slider-row">
+                        <div class="slider-header">
+                            <div class="slider-label"><span class="dot" style="background:linear-gradient(90deg,red,orange,yellow,green,cyan,blue,magenta,red);width:20px;height:10px;border-radius:5px;"></span>Hue</div>
+                            <div class="slider-value" id="hue-val">0 deg</div>
+                        </div>
+                        <input type="range" class="slider-track" id="hue-slider" min="0" max="360" value="0" oninput="updatePicker()">
+                    </div>
+                    <div class="slider-row">
+                        <div class="slider-header">
+                            <div class="slider-label"><span class="dot" style="background:#FF6B6B;"></span>Saturation</div>
+                            <div class="slider-value" id="sat-val">100%</div>
+                        </div>
+                        <input type="range" class="slider-track" id="sat-slider" min="0" max="100" value="100" oninput="updatePicker()">
+                    </div>
+                    <div class="slider-row">
+                        <div class="slider-header">
+                            <div class="slider-label"><span class="dot" style="background:#FFE66D;"></span>Brightness</div>
+                            <div class="slider-value" id="bright-val">100%</div>
+                        </div>
+                        <input type="range" class="slider-track" id="bright-slider" min="0" max="100" value="100" oninput="updatePicker()">
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="game-btn" onclick="handleAction()">MEMORIZE</button>
+            </div>
+        </div>
+        
+        <div class="screen" id="screen-result">
+            <div class="game-area">
+                <div class="result-hero">
+                    <div class="result-mascot" id="result-mascot"></div>
+                    <div class="result-label" id="result-label">ROUND 1</div>
+                    <div class="result-score-big" id="result-score">0</div>
+                    <div class="result-msg" id="result-msg">...</div>
+                </div>
+                <div class="card">
+                    <div class="compare-row">
+                        <div class="compare-box"><div class="compare-swatch" id="target-swatch"></div><div class="compare-label">Target</div></div>
+                        <div class="compare-box"><div class="compare-swatch" id="guess-swatch"></div><div class="compare-label">Yours</div></div>
+                    </div>
+                    <div class="accuracy-wrap">
+                        <div class="accuracy-label"><span>Accuracy</span><span id="accuracy-text">0%</span></div>
+                        <div class="accuracy-track"><div class="accuracy-fill" id="accuracy-fill"></div></div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" id="next-btn" onclick="nextRound()">NEXT ROUND</button>
+            </div>
+        </div>
+                <div class="screen" id="screen-over">
+            <div class="game-area">
+                <div class="go-trophy">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M25 25 L25 45 Q25 65 50 70 Q75 65 75 45 L75 25 Z" fill="#FFD700" stroke="#B8860B" stroke-width="3"/>
+                        <path d="M25 30 Q15 30 15 40 Q15 50 25 50" fill="none" stroke="#B8860B" stroke-width="3"/>
+                        <path d="M75 30 Q85 30 85 40 Q85 50 75 50" fill="none" stroke="#B8860B" stroke-width="3"/>
+                        <rect x="35" y="70" width="30" height="8" rx="2" fill="#FFD700" stroke="#B8860B" stroke-width="2"/>
+                        <rect x="30" y="78" width="40" height="6" rx="2" fill="#FFD700" stroke="#B8860B" stroke-width="2"/>
+                        <polygon points="50,35 53,43 62,43 55,49 58,57 50,52 42,57 45,49 38,43 47,43" fill="#FFF" stroke="#B8860B" stroke-width="1"/>
+                        <ellipse cx="40" cy="38" rx="6" ry="10" fill="white" opacity="0.4" transform="rotate(-20 40 38)"/>
+                    </svg>
+                </div>
+                <div class="go-title">GREAT JOB!</div>
+                <div class="go-final" id="final-score">0</div>
+                <div class="go-msg" id="final-msg">Picky is proud of you!</div>
+                <div class="card" style="padding:12px;"><div class="stats-grid" id="stats-grid"></div></div>
+                <div class="btn-row">
+                    <button class="btn btn-primary" onclick="startGame()">PLAY AGAIN</button>
+                    <button class="btn btn-secondary" onclick="showMenu()">MENU</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="screen" id="screen-howto">
+            <div class="game-area">
+                <div class="card" style="overflow-y:auto;max-height:70vh;">
+                    <div class="card-title">HOW TO PLAY</div>
+                    <ul class="htp-list">
+                        <li><div class="htp-num">1</div><div>Picky shows you a color for a few seconds</div></li>
+                        <li><div class="htp-num">2</div><div>Remember the color carefully!</div></li>
+                        <li><div class="htp-num">3</div><div>Use the sliders to match Picky's color</div></li>
+                        <li><div class="htp-num">4</div><div>See how close you got!</div></li>
+                        <li><div class="htp-num">5</div><div>Help Picky through 5 rounds!</div></li>
+                    </ul>
+                    <div class="htp-diff">
+                        <div class="htp-diff-title">Difficulty Levels</div>
+                        <div class="htp-diff-row">
+                            <span class="htp-diff-tag easy">EASY: 3s</span>
+                            <span class="htp-diff-tag med">MED: 2s</span>
+                            <span class="htp-diff-tag hard">HARD: 1.5s</span>
+                        </div>
+                    </div>
+                </div>
+                <button class="btn btn-primary" onclick="showMenu()">GOT IT!</button>
+            </div>
+        </div>
+    </div>
+    <div class="confetti-layer" id="confetti-layer"></div>
+    <div class="toast" id="toast"></div>
+    <script>
+const Audio = {
+    ctx:null, ready:false,
+    init(){ if(this.ready)return; try{this.ctx=new(window.AudioContext||window.webkitAudioContext)();this.ready=true;}catch(e){} },
+    tone(f,d,t='sine',v=0.25){
+        if(!this.ctx)return;
+        const o=this.ctx.createOscillator(),g=this.ctx.createGain();
+        o.type=t; o.frequency.setValueAtTime(f,this.ctx.currentTime);
+        g.gain.setValueAtTime(v,this.ctx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001,this.ctx.currentTime+d);
+        o.connect(g); g.connect(this.ctx.destination); o.start(); o.stop(this.ctx.currentTime+d);
+    },
+    play(type){
+        this.init();
+        switch(type){
+            case 'start': this.tone(523,0.12); setTimeout(()=>this.tone(659,0.12),120); setTimeout(()=>this.tone(784,0.2),240); break;
+            case 'tick': this.tone(880,0.04,'square',0.1); break;
+            case 'slide': this.tone(300+Math.random()*400,0.03,'sine',0.04); break;
+            case 'success': this.tone(523,0.1); setTimeout(()=>this.tone(659,0.1),100); setTimeout(()=>this.tone(784,0.1),200); setTimeout(()=>this.tone(1047,0.3),300); break;
+            case 'fail': this.tone(300,0.2,'sawtooth'); setTimeout(()=>this.tone(250,0.3,'sawtooth'),200); break;
+            case 'over': [523,494,466,440].forEach((f,i)=>setTimeout(()=>this.tone(f,0.3),i*200)); setTimeout(()=>this.tone(880,0.5),800); break;
+            case 'click': this.tone(600,0.04,'sine',0.08); break;
+        }
+    }
+};
+
+const G = {
+    round:1, totalRounds:5, score:0, roundScores:[],
+    target:{h:0,s:100,b:100}, guess:{h:0,s:100,b:100},
+    diff:'easy', phase:'menu',
+    best:parseInt(localStorage.getItem('cmbest')||'0'),
+    lb:JSON.parse(localStorage.getItem('cmlb')||'[]'),
+    timer:null,
+    cfg:{easy:{mem:3000,guess:20000,sat:[60,100],bri:[60,100]},medium:{mem:2000,guess:15000,sat:[40,100],bri:[40,100]},hard:{mem:1500,guess:10000,sat:[20,100],bri:[20,100]}}
+};
+
+function hsb2rgb(h,s,b){
+    s/=100; b/=100;
+    const c=b*s, x=c*(1-Math.abs((h/60)%2-1)), m=b-c;
+    let r,g,bl;
+    if(h<<60){r=c;g=x;bl=0}else if(h<<120){r=x;g=c;bl=0}else if(h<<180){r=0;g=c;bl=x}else if(h<<240){r=0;g=x;bl=c}else if(h<<300){r=x;g=0;bl=c}else{r=c;g=0;bl=x}
+    return {r:Math.round((r+m)*255),g:Math.round((g+m)*255),b:Math.round((bl+m)*255)};
+}
+function hsb2str(h,s,b){const c=hsb2rgb(h,s,b); return `rgb(${c.r},${c.g},${c.b})`;}
+function colorDist(h1,s1,b1,h2,s2,b2){
+    const c1=hsb2rgb(h1,s1,b1), c2=hsb2rgb(h2,s2,b2);
+    const dr=(c1.r-c2.r)/255, dg=(c1.g-c2.g)/255, db=(c1.b-c2.b)/255;
+    let dh=Math.abs(h1-h2); if(dh>180) dh=360-dh;
+    const ds=(s1-s2)/100, dbv=(b1-b2)/100;
+    return Math.sqrt(dr*dr*0.3+dg*dg*0.3+db*db*0.3+(dh/360)**2*0.5+ds*ds*0.2+dbv*dbv*0.2);
+}
+function calcScore(h1,s1,b1,h2,s2,b2){
+    const d=colorDist(h1,s1,b1,h2,s2,b2);
+    return Math.max(0, Math.min(100, Math.round(100-d*100)));
+}
+function randColor(){
+    const c=G.cfg[G.diff];
+    return {h:Math.floor(Math.random()*360),s:Math.floor(Math.random()*(c.sat[1]-c.sat[0])+c.sat[0]),b:Math.floor(Math.random()*(c.bri[1]-c.bri[0])+c.bri[0])};
+}
+function msgForScore(s){
+    if(s>=95) return 'WOW! Perfect memory!';
+    if(s>=85) return 'Amazing! So close!';
+    if(s>=70) return 'Great job! Picky is happy!';
+    if(s>=50) return 'Not bad! Keep trying!';
+    if(s>=30) return 'Oops! Tricky color!';
+    return 'Oh no! Picky is confused!';
+}
+
+const Mascots = {
+    happy:`<<svg viewBox="0 0 100 100"><rect x="40" y="10" width="20" height="60" rx="10" fill="#8B4513" stroke="#2D3436" stroke-width="3"/><rect x="35" y="5" width="30" height="20" rx="8" fill="#FF6B6B" stroke="#2D3436" stroke-width="3"/><circle cx="42" cy="15" r="4" fill="white" stroke="#2D3436" stroke-width="1.5"/><circle cx="58" cy="15" r="4" fill="white" stroke="#2D3436" stroke-width="1.5"/><circle cx="42" cy="15" r="2" fill="#2D3436"/><circle cx="58" cy="15" r="2" fill="#2D3436"/><path d="M45 22 Q50 28 55 22" fill="none" stroke="#2D3436" stroke-width="2" stroke-linecap="round"/><rect x="38" y="70" width="24" height="8" rx="2" fill="#636E72" stroke="#2D3436" stroke-width="2"/><rect x="35" y="78" width="30" height="6" rx="2" fill="#FFD700" stroke="#2D3436" stroke-width="2"/><ellipse cx="45" cy="12" rx="2" ry="3" fill="white" opacity="0.5" transform="rotate(-15 45 12)"/></svg>`,
+    sad:`<<svg viewBox="0 0 100 100"><rect x="40" y="10" width="20" height="60" rx="10" fill="#8B4513" stroke="#2D3436" stroke-width="3"/><rect x="35" y="5" width="30" height="20" rx="8" fill="#E17055" stroke="#2D3436" stroke-width="3"/><circle cx="42" cy="18" r="4" fill="white" stroke="#2D3436" stroke-width="1.5"/><circle cx="58" cy="18" r="4" fill="white" stroke="#2D3436" stroke-width="1.5"/><circle cx="42" cy="18" r="2" fill="#2D3436"/><circle cx="58" cy="18" r="2" fill="#2D3436"/><path d="M45 24 Q50 20 55 24" fill="none" stroke="#2D3436" stroke-width="2" stroke-linecap="round"/><rect x="38" y="70" width="24" height="8" rx="2" fill="#636E72" stroke="#2D3436" stroke-width="2"/><rect x="35" y="78" width="30" height="6" rx="2" fill="#B2BEC3" stroke="#2D3436" stroke-width="2"/></svg>`,
+    think:`<<svg viewBox="0 0 100 100"><rect x="40" y="10" width="20" height="60" rx="10" fill="#8B4513" stroke="#2D3436" stroke-width="3"/><rect x="35" y="5" width="30" height="20" rx="8" fill="#FFE66D" stroke="#2D3436" stroke-width="3"/><circle cx="42" cy="15" r="4" fill="white" stroke="#2D3436" stroke-width="1.5"/><circle cx="58" cy="15" r="4" fill="white" stroke="#2D3436" stroke-width="1.5"/><circle cx="42" cy="15" r="2" fill="#2D3436"/><circle cx="58" cy="15" r="2" fill="#2D3436"/><path d="M45 22 Q50 25 55 22" fill="none" stroke="#2D3436" stroke-width="2" stroke-linecap="round"/><rect x="38" y="70" width="24" height="8" rx="2" fill="#636E72" stroke="#2D3436" stroke-width="2"/><rect x="35" y="78" width="30" height="6" rx="2" fill="#FFD700" stroke="#2D3436" stroke-width="2"/><text x="75" y="25" font-size="20" fill="#FFE66D" stroke="#2D3436" stroke-width="1" font-weight="bold">?</text></svg>`,
+    wow:`<<svg viewBox="0 0 100 100"><rect x="40" y="10" width="20" height="60" rx="10" fill="#8B4513" stroke="#2D3436" stroke-width="3"/><rect x="35" y="5" width="30" height="20" rx="8" fill="#FF6B6B" stroke="#2D3436" stroke-width="3"/><ellipse cx="42" cy="15" rx="5" ry="6" fill="white" stroke="#2D3436" stroke-width="1.5"/><ellipse cx="58" cy="15" rx="5" ry="6" fill="white" stroke="#2D3436" stroke-width="1.5"/><circle cx="42" cy="15" r="2.5" fill="#2D3436"/><circle cx="58" cy="15" r="2.5" fill="#2D3436"/><circle cx="50" cy="24" r="4" fill="#2D3436"/><rect x="38" y="70" width="24" height="8" rx="2" fill="#636E72" stroke="#2D3436" stroke-width="2"/><rect x="35" y="78" width="30" height="6" rx="2" fill="#FFD700" stroke="#2D3436" stroke-width="2"/></svg>`
+};
+
+function showScreen(id){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById('screen-'+id).classList.add('active');
+}
+function updateBar(){
+    document.getElementById('round-display').textContent=G.round+'/'+G.totalRounds;
+    document.getElementById('score-display').textContent=G.score;
+    document.getElementById('best-display').textContent=G.best;
+}
+function toast(msg){
+    const t=document.getElementById('toast');
+    t.textContent=msg; t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'),1500);
+}
+function confetti(){
+    const layer=document.getElementById('confetti-layer');
+    layer.innerHTML='';
+    const colors=['#FF6B6B','#4ECDC4','#FFE66D','#00B894','#FDCB6E','#E17055'];
+    for(let i=0;i<<40;i++){
+        const p=document.createElement('div');
+        p.className='confetti-piece';
+        p.style.left=Math.random()*100+'%';
+        p.style.background=colors[Math.floor(Math.random()*colors.length)];
+        p.style.width=(8+Math.random()*8)+'px';
+        p.style.height=(8+Math.random()*8)+'px';
+        p.style.borderRadius=Math.random()>0.5?'50%':'2px';
+        p.style.animationDelay=Math.random()*1.5+'s';
+        p.style.animationDuration=(2+Math.random()*2)+'s';
+        layer.appendChild(p);
+    }
+    setTimeout(()=>layer.innerHTML='',4000);
+}
+function setDiff(d){
+    Audio.play('click'); G.diff=d;
+    document.querySelectorAll('.diff-btn').forEach(b=>b.classList.toggle('active',b.dataset.diff===d));
+}
+function showMenu(){
+    Audio.play('click');
+    document.getElementById('app-header').style.display='none';
+    document.getElementById('score-bar').style.display='none';
+    showScreen('menu'); updateLB();
+}
+function updateLB(){
+    const list=document.getElementById('lb-list');
+    if(G.lb.length===0){list.innerHTML='<div class="lb-entry"><span style="color:#999">No scores yet!</span><span>-</span></div>'; return;}
+    const sorted=[...G.lb].sort((a,b)=>b.score-a.score).slice(0,5);
+    list.innerHTML=sorted.map((e,i)=>{
+        const rc=i===0?'gold':i===1?'silver':i===2?'bronze':'normal';
+        return `<div class="lb-entry"><div style="display:flex;align-items:center;gap:8px"><div class="lb-rank ${rc}">${i+1}</div><span class="lb-score">${e.score} pts</span></div><span class="lb-date">${e.date}</span></div>`;
+    }).join('');
+}
+function startGame(){
+    Audio.play('start');
+    G.round=1; G.score=0; G.roundScores=[]; G.phase='mem';
+    document.getElementById('app-header').style.display='block';
+    document.getElementById('score-bar').style.display='flex';
+    updateBar(); showScreen('game'); startRound();
+}
+function startRound(){
+    G.phase='mem'; G.target=randColor();
+    const disp=document.getElementById('color-display');
+    disp.style.background=hsb2str(G.target.h,G.target.s,G.target.b);
+    disp.classList.remove('hidden');
+    document.getElementById('hidden-icon').style.display='none';
+    document.getElementById('picker-panel').classList.remove('active');
+    document.getElementById('game-btn').textContent='MEMORIZE';
+    document.getElementById('game-btn').style.display='block';
+    const m=document.getElementById('game-mascot');
+    m.innerHTML=Mascots.happy; m.className='mascot-wrap';
+    document.getElementById('hue-slider').value=0;
+    document.getElementById('sat-slider').value=100;
+    document.getElementById('bright-slider').value=100;
+    updatePicker();
+    const cfg=G.cfg[G.diff];
+    let time=cfg.mem;
+    const bar=document.getElementById('timer-fill');
+    bar.style.width='100%'; bar.style.transition='none';
+    setTimeout(()=>{bar.style.transition=`width ${cfg.mem}ms linear`; bar.style.width='0%';},50);
+    let ticks=3;
+    const tickInt=setInterval(()=>{ticks--; if(ticks>0)Audio.play('tick');},cfg.mem/3);
+    G.timer=setTimeout(()=>{clearInterval(tickInt); showGuess();},cfg.mem);
+}
+function showGuess(){
+    G.phase='guess';
+    document.getElementById('color-display').classList.add('hidden');
+    document.getElementById('hidden-icon').style.display='block';
+    document.getElementById('picker-panel').classList.add('active');
+    document.getElementById('game-btn').textContent='SUBMIT GUESS';
+    const m=document.getElementById('game-mascot');
+    m.innerHTML=Mascots.think; m.className='mascot-wrap think';
+    Audio.play('tick');
+    const cfg=G.cfg[G.diff];
+    const bar=document.getElementById('timer-fill');
+    bar.style.width='100%'; bar.style.transition='none';
+    setTimeout(()=>{bar.style.transition=`width ${cfg.guess}ms linear`; bar.style.width='0%';},50);
+    G.timer=setTimeout(()=>handleAction(),cfg.guess);
+}
+function updatePicker(){
+    const h=parseInt(document.getElementById('hue-slider').value);
+    const s=parseInt(document.getElementById('sat-slider').value);
+    const b=parseInt(document.getElementById('bright-slider').value);
+    document.getElementById('hue-val').textContent=h+' deg';
+    document.getElementById('sat-val').textContent=s+'%';
+    document.getElementById('bright-val').textContent=b+'%';
+    document.getElementById('picker-preview').style.background=hsb2str(h,s,b);
+    const mid=hsb2str(h,100,50);
+    document.getElementById('sat-slider').style.background=`linear-gradient(to right, #808080, ${mid})`;
+    document.getElementById('bright-slider').style.background=`linear-gradient(to right, #000, ${mid})`;
+    Audio.play('slide');
+}
+function handleAction(){
+    if(G.phase==='mem'){clearTimeout(G.timer); showGuess();}
+    else if(G.phase==='guess'){
+        clearTimeout(G.timer);
+        const h=parseInt(document.getElementById('hue-slider').value);
+        const s=parseInt(document.getElementById('sat-slider').value);
+        const b=parseInt(document.getElementById('bright-slider').value);
+        G.guess={h,s,b}; showResult();
+    }
+}
+function showResult(){
+    G.phase='result';
+    const sc=calcScore(G.target.h,G.target.s,G.target.b,G.guess.h,G.guess.s,G.guess.b);
+    G.roundScores.push(sc); G.score+=sc;
+    if(G.score>G.best){G.best=G.score; localStorage.setItem('cmbest',G.best.toString());}
+    updateBar(); showScreen('result');
+    document.getElementById('result-label').textContent='ROUND '+G.round;
+    document.getElementById('result-score').textContent=sc;
+    document.getElementById('result-msg').textContent=msgForScore(sc);
+    document.getElementById('target-swatch').style.background=hsb2str(G.target.h,G.target.s,G.target.b);
+    document.getElementById('guess-swatch').style.background=hsb2str(G.guess.h,G.guess.s,G.guess.b);
+    document.getElementById('accuracy-text').textContent=sc+'%';
+    document.getElementById('accuracy-fill').style.width='0%';
+    setTimeout(()=>{document.getElementById('accuracy-fill').style.width=sc+'%';},300);
+    const rm=document.getElementById('result-mascot');
+    if(sc>=70){
+        rm.innerHTML=Mascots.happy; rm.parentElement.className='result-hero';
+        rm.className='result-mascot'; rm.style.animation='mascotBounce 0.6s ease';
+        Audio.play('success'); if(sc>=90)confetti();
+    }else{
+        rm.innerHTML=Mascots.sad; rm.parentElement.className='result-hero';
+        rm.className='result-mascot'; rm.style.animation='mascotShake 0.5s ease';
+        Audio.play('fail');
+    }
+    document.getElementById('next-btn').textContent=G.round>=G.totalRounds?'FINAL SCORE':'NEXT ROUND';
+}
+function nextRound(){
+    Audio.play('click');
+    if(G.round>=G.totalRounds){showOver();}
+    else{G.round++; updateBar(); showScreen('game'); startRound();}
+}
+function showOver(){
+    G.phase='over'; showScreen('over');
+    document.getElementById('final-score').textContent=G.score;
+    const entry={score:G.score, date:new Date().toLocaleDateString(), diff:G.diff};
+    G.lb.push(entry); if(G.lb.length>20)G.lb.shift();
+    localStorage.setItem('cmlb',JSON.stringify(G.lb));
+    const avg=G.score/G.totalRounds;
+    let msg='';
+    if(avg>=90)msg='AMAZING! Picky is super proud!';
+    else if(avg>=75)msg='Great job! Picky is dancing!';
+    else if(avg>=60)msg='Good job! Picky is smiling!';
+    else if(avg>=40)msg='Not bad! Picky says try again!';
+    else msg='Picky knows you can do better!';
+    document.getElementById('final-msg').textContent=msg;
+    document.getElementById('stats-grid').innerHTML=G.roundScores.map((s,i)=>`<div class="stat-bubble"><span class="num">${s}</span><span class="lbl">R${i+1}</span></div>`).join('');
+    Audio.play('over'); if(avg>=80)confetti();
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+    updateLB();
+    ['touchstart','click'].forEach(e=>document.addEventListener(e,()=>Audio.init(),{once:true}));
+    let last=0;
+    document.addEventListener('touchend',e=>{const now=Date.now(); if(now-last<=300)e.preventDefault(); last=now;},{passive:false});
+});
+document.addEventListener('contextmenu',e=>e.preventDefault());
+</script>
+</body>
+</html>
