@@ -4,7 +4,7 @@ A fun, cartoonish color memory game built for mobile and YouTube Playables. Help
 
 ## Play Now
 
-[Play on GitHub Pages](https://sarthaksri06.github.io/picky-paintbrush/)
+[Play on GitHub Pages](https://sarthaksri06.github.io/Picky-Paintbrush-/)
 
 ## How to Play
 
